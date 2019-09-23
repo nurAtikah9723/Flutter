@@ -1,42 +1,31 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AddTask extends StatefulWidget {
+class EditTask extends StatefulWidget {
+  EditTask({this.title,this.note, this.index /*this.duedate*/});
+  final String title;
+  final String note;
+  //final DateTime duedate;
+  final index;
   @override
-  _AddTaskState createState() => _AddTaskState();
+  _EditTaskState createState() => _EditTaskState();
 }
 
-class _AddTaskState extends State<AddTask> {
+class _EditTaskState extends State<EditTask> {
 
-  DateTime _dueDate = new DateTime.now();
-  String _dateText = '';
+  TextEditingController controllerTitle;
+  TextEditingController controllernote;
 
   String newTask = '';
   String note = '';
 
-  Future<Null> _selectDueDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dueDate,
-      firstDate: DateTime(2019),
-      lastDate:  DateTime(2090)
-    );
-
-    if (picked != null) {
-      setState(() {
-          _dueDate=picked;
-          _dateText= "${picked.day}/${picked.month}/${picked.year}"; 
-      });
-    }
-  }
-void _addData(){
+void _editTask(){
   Firestore.instance.runTransaction((Transaction transaction) async{
-    CollectionReference reference = Firestore.instance.collection('task');
-    await reference.add({
+    DocumentSnapshot snapshot =
+    await transaction.get(widget.index);
+    await transaction.update(snapshot.reference, {
       "title" : newTask,
-      "duedate" : _dateText,
-      "note" : note,
+      "note": note,
     });
   });
   Navigator.pop(context);
@@ -44,7 +33,9 @@ void _addData(){
 @override
   void initState() {
     super.initState();
-    _dateText= "${_dueDate.day}/${_dueDate.month}/${_dueDate.year}";
+
+    controllerTitle = new TextEditingController(text: widget.title);
+    controllernote = new TextEditingController(text: widget.note);
   }
 
   @override
@@ -74,7 +65,7 @@ void _addData(){
                 ),
                 new Padding(
                   padding: const EdgeInsets.only(top: 20.0),
-                  child: Text("Add Task", style: new TextStyle(fontSize: 24.0, color: Colors.white),),
+                  child: Text("Edit Task", style: new TextStyle(fontSize: 24.0, color: Colors.white),),
                   ),
                 Icon(Icons.list,color: Colors.white,size: 30.0)
               ],
@@ -84,6 +75,7 @@ void _addData(){
           (
             padding: const EdgeInsets.all(16.0),
             child:TextField(
+              controller: controllerTitle,
               onChanged:(String str){
                 setState(() {
                  newTask = str; 
@@ -96,24 +88,11 @@ void _addData(){
               ),
             style: new TextStyle(fontSize: 22.0, color: Colors.black),)
           ),
-          new Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: new Row(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: new Icon(Icons.date_range),
-                ),
-                new Expanded(child: Text("Due Date", style: new TextStyle(fontSize: 22.0, color: Colors.black54),)),
-                new FlatButton(
-                  onPressed: () =>_selectDueDate(context),
-                  child: Text(_dateText , style: new TextStyle(fontSize: 22.0, color: Colors.black54),)),
-              ],
-            ),
-          ),
+         
           new Padding(
           padding: const EdgeInsets.all(16.0),
             child:TextField(
+              controller: controllernote,
               onChanged:(String str){
                 setState(() {
                  note = str; 
@@ -134,7 +113,7 @@ void _addData(){
                 IconButton(
                   icon: Icon(Icons.check, size: 40.0),
                   onPressed: (){
-                    _addData();
+                    _editTask();
                   },
                 ),
                 IconButton(
